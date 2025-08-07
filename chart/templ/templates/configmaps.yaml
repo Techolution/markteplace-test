@@ -1,0 +1,15 @@
+{{- range $name, $cfg := .Values.configmaps }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  annotations:
+    maintainer: "DevOps Team"
+    lastUpdated: {{ $.Values.lastUpdatedDate | quote }}
+data:
+  {{- range $key, $value := $cfg.data }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+---
+{{- end }}

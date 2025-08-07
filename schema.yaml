@@ -1,0 +1,84 @@
+x-google-marketplace:
+  schemaVersion: v2
+  partnerId: techolution-public
+  solutionId: appmod-pa-demo
+  applicationApiVersion: v1beta1
+  publishedVersion: "1.0.0"   # must match your deployer image tag
+  publishedVersionMetadata:
+    releaseNote: >
+      Initial Marketplace release of MyApp.
+  images:
+    '':
+      properties:
+        artifacts.image.repository:
+          type: REPO_WITHOUT_REGISTRY
+          default: appmod-pa-demo
+        artifacts.image.registry:
+          type: REGISTRY
+          default: us-docker.pkg.dev/techolution-public
+        deployments.egpt-react-fe.imageTag:
+          type: TAG
+          default: "1.0.0"
+
+  deployerServiceAccount:               # <— add this here
+    description: >
+      Allows the deployer to create the GCP and Gateway resources
+      and to bind RBAC roles for RoleBindings.
+    roles:
+      - type: ClusterRole                # cluster-wide rights
+        rulesType: CUSTOM
+        rules:
+          - apiGroups: ["rbac.authorization.k8s.io"]
+            resources: ["rolebindings","clusterrolebindings"]
+            verbs: ["create","get","list","watch","patch","update"]
+          # existing Gateway API rules…
+          - apiGroups: ["gateway.networking.k8s.io"]
+            resources: ["gateways","httproutes"]
+            verbs: ["*"]
+          # existing GCP policy rules…
+          - apiGroups: ["networking.gke.io"]
+            resources: ["gcpbackendpolicies","healthcheckpolicies"]
+            verbs: ["*"]
+          # **new** Application CR permissions
+          - apiGroups: ["app.k8s.io"]
+            resources: ["applications"]
+            verbs: ["get","list","watch","create","patch","update"]
+          - apiGroups: ["apiextensions.k8s.io"]
+            resources: ["customresourcedefinitions"]
+            verbs: ["create","get","list","watch","update","patch"]
+
+properties:
+  name:
+    type: string
+    default: "test-release"
+    x-google-marketplace:
+      type: NAME
+  namespace:
+    type: string
+    default: "test"
+    x-google-marketplace:
+      type: NAMESPACE
+  deployments.egpt-react-fe.envParameters.TEST_ENV:
+    type: string
+    default: "one"
+    description: “Value for TEST_ENV in the React FE pod.”
+  gatewayCertName:
+    type: string
+    default: "new-cert"
+    description: “Google Managed Certificate for gateway.”
+  gatewayStaticIP:
+    type: string
+    default: "new-ip"
+    description: “Static IP' name for gateway.”
+  gatewayHostname:
+    type: string
+    default: "practicedomain.space"
+    description: “Host name for gateway.”
+
+# (Add more entries under `properties:` for each --set override you want)
+required:
+  - name
+  - namespace
+  - gatewayStaticIP
+  - gatewayCertName
+  - gatewayHostname

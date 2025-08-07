@@ -1,0 +1,37 @@
+apiVersion: app.k8s.io/v1beta1
+kind: Application
+metadata:
+  name: "{{ .Release.Name }}"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/name: "{{ .Release.Name }}"
+  annotations:
+    marketplace.cloud.google.com/deploy-info: |
+      {"partner_id":"techolution-public",
+       "product_id":"appmod-pa-demo",
+       "partner_name":"Techolution Consulting LLC"}
+spec:
+  descriptor:
+    type: appmod-pa-demo
+    version: "1.0.0"
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "{{ .Release.Name }}"
+  addOwnerRef: true
+  componentKinds:
+    # Core-level Service
+    - group: ""
+      kind: Service
+    # Deployment from apps/v1
+    - group: apps
+      kind: Deployment
+    # Gateway API resources
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+    # GCP-specific policy CRDs
+    - group: networking.gke.io
+      kind: GCPBackendPolicy
+    - group: networking.gke.io
+      kind: HealthCheckPolicy

@@ -1,0 +1,94 @@
+{{- range $name, $cfg := .Values.httpRoutes }}
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  parentRefs:
+    - name: {{ $cfg.parent }}
+  hostnames:
+    {{- range $cfg.hostnames }}
+    - {{ . }}
+    {{- end }}
+  rules:
+    {{- range $cfg.rules }}
+    - matches:
+        - path:
+            type: {{ .pathType | default "PathPrefix" }}
+            value: {{ .path }}
+      {{- if .filters }}
+      filters:
+        {{- range .filters }}
+        {{- if .requestHeaderModifier }}
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            {{- if .requestHeaderModifier.add }}
+            add:
+              {{- range .requestHeaderModifier.add }}
+              - name: "{{ .name }}"
+                value: "{{ .value }}"
+              {{- end }}
+            {{- end }}
+            {{- if .requestHeaderModifier.remove }}
+            remove:
+              {{- range .requestHeaderModifier.remove }}
+              - {{ . }}
+              {{- end }}
+            {{- end }}
+            {{- if .requestHeaderModifier.set }}
+            set:
+              {{- range .requestHeaderModifier.set }}
+              - name: "{{ .name }}"
+                value: "{{ .value }}"
+              {{- end }}
+            {{- end }}
+        {{- end }}
+
+        {{- if .responseHeaderModifier }}
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            {{- if .responseHeaderModifier.add }}
+            add:
+              {{- range .responseHeaderModifier.add }}
+              - name: "{{ .name }}"
+                value: "{{ .value }}"
+              {{- end }}
+            {{- end }}
+            {{- if .responseHeaderModifier.remove }}
+            remove:
+              {{- range .responseHeaderModifier.remove }}
+              - {{ . }}
+              {{- end }}
+            {{- end }}
+            {{- if .responseHeaderModifier.set }}
+            set:
+              {{- range .responseHeaderModifier.set }}
+              - name: "{{ .name }}"
+                value: "{{ .value }}"
+              {{- end }}
+            {{- end }}
+        {{- end }}
+
+        {{- if .urlRewrite }}
+        - type: URLRewrite
+          urlRewrite:
+            {{- if .urlRewrite.hostname }}
+            hostname: {{ .urlRewrite.hostname }}
+            {{- end }}
+            {{- if .urlRewrite.path }}
+            path:
+              type: {{ .urlRewrite.path.type }}
+              replacePrefixMatch: {{ .urlRewrite.path.replacePrefixMatch }}
+            {{- end }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+
+      backendRefs:
+        - name: {{ .backend }}
+          port: {{ .port }}
+          weight: {{ .weight | default 100 }}
+    {{- end }}
+{{- end }}

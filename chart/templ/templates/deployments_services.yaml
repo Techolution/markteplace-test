@@ -1,0 +1,203 @@
+{{- range $name, $cfg := .Values.deployments }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- range $key, $value := $cfg.labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+spec:
+  replicas: {{ $cfg.replicas | required "replicas is required" }}
+  selector:
+    matchLabels:
+      {{- range $key, $value := $cfg.labels }}
+      {{ $key }}: {{ $value }}
+      {{- end }}
+  {{- if $cfg.strategy }}
+  strategy:
+    type: {{ $cfg.strategy }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- range $key, $value := $cfg.labels }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
+    spec:
+      {{- if $cfg.serviceAccountName }}
+      serviceAccountName: {{ $cfg.serviceAccountName }}
+      {{- end }}
+      containers:
+        - name: {{ $name }}
+          image: "{{ $.Values.artifacts.registry }}/{{ $.Values.artifacts.repository }}/{{ $name }}:{{ $cfg.imageTag | required "imageTag is required" }}"
+          {{- if $cfg.command }}
+          command:
+            {{- range $cfg.command }}
+            - {{ . | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $cfg.imagePullPolicy }}
+          imagePullPolicy: {{ $cfg.imagePullPolicy | default "IfNotPresent" }}
+          {{- end }}
+
+          {{- if $cfg.envRef }}
+          envFrom:
+            {{- if $cfg.envRef.configMapName }}
+            - configMapRef:
+                name: {{ $cfg.envRef.configMapName }}
+            {{- end }}
+            {{- if $cfg.envRef.secretName }}
+            - secretRef:
+                name: {{ $cfg.envRef.secretName }}
+            {{- end }}
+          {{- end }}
+
+          {{- $env := $cfg.env | default list }}
+          {{- $paramEnv := $cfg.envParameters | default dict }}
+          {{- if or (gt (len $env) 0) (gt (len $paramEnv) 0) }}
+          env:
+            {{- range $env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+
+            {{- range $key, $val := $paramEnv }}
+              {{- $exists := false }}
+              {{- range $env }}
+                {{- if eq .name $key }}
+                  {{- $exists = true }}
+                {{- end }}
+              {{- end }}
+              {{- if not $exists }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+
+          {{- if $cfg.containerPort }}
+          ports:
+            - containerPort: {{ $cfg.containerPort }}
+              name: {{ $cfg.containerPortName | default "http" }}
+              protocol: {{ $cfg.containerPortProtocol | default "TCP" }}
+          {{- end }}
+
+          {{- if $cfg.readinessProbe }}
+          readinessProbe:
+            failureThreshold: {{ $cfg.readinessProbe.failureThreshold | default 3 }}
+            httpGet:
+              path: {{ $cfg.readinessProbe.httpGet.path | default "/" }}
+              port: {{ $cfg.readinessProbe.httpGet.port | default $cfg.containerPort }}
+              scheme: {{ $cfg.readinessProbe.httpGet.scheme | default "HTTP" }}
+            periodSeconds: {{ $cfg.readinessProbe.periodSeconds | default 10 }}
+            successThreshold: {{ $cfg.readinessProbe.successThreshold | default 1 }}
+            timeoutSeconds: {{ $cfg.readinessProbe.timeoutSeconds | default 1 }}
+          {{- end }}
+
+          {{- if $cfg.livenessProbe }}
+          livenessProbe:
+            failureThreshold: {{ $cfg.livenessProbe.failureThreshold | default 3 }}
+            httpGet:
+              path: {{ $cfg.livenessProbe.httpGet.path | default "/" }}
+              port: {{ $cfg.livenessProbe.httpGet.port | default $cfg.containerPort }}
+              scheme: {{ $cfg.livenessProbe.httpGet.scheme | default "HTTP" }}
+            periodSeconds: {{ $cfg.livenessProbe.periodSeconds | default 10 }}
+            successThreshold: {{ $cfg.livenessProbe.successThreshold | default 1 }}
+            timeoutSeconds: {{ $cfg.livenessProbe.timeoutSeconds | default 1 }}
+          {{- end }}
+
+          {{- if $cfg.resources }}
+          resources:
+            {{- if $cfg.resources.resourceLimits }}
+            limits:
+              {{- if $cfg.resources.resourceLimits.cpu }}
+              cpu: {{ $cfg.resources.resourceLimits.cpu }}
+              {{- end }}
+              {{- if $cfg.resources.resourceLimits.memory }}
+              memory: {{ $cfg.resources.resourceLimits.memory }}
+              {{- end }}
+              {{- if $cfg.resources.resourceLimits.gpu }}
+              nvidia.com/gpu: {{ $cfg.resources.resourceLimits.gpu }}
+              {{- end }}
+            {{- end }}
+            {{- if $cfg.resources.resourceRequests }}
+            requests:
+              {{- if $cfg.resources.resourceRequests.cpu }}
+              cpu: {{ $cfg.resources.resourceRequests.cpu }}
+              {{- end }}
+              {{- if $cfg.resources.resourceRequests.memory }}
+              memory: {{ $cfg.resources.resourceRequests.memory }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+
+          {{- if $cfg.volumeMounts }}
+          volumeMounts:
+            {{- range $cfg.volumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              readOnly: {{ .readOnly | default true }}
+            {{- end }}
+          {{- end }}
+
+      {{- if $cfg.tolerations }}
+      tolerations:
+        {{- range $cfg.tolerations }}
+        - key: {{ .key | quote }}
+          operator: {{ .operator | quote }}
+          value: {{ .value | quote }}
+          effect: {{ .effect | quote }}
+        {{- end }}
+      {{- end }}
+
+      {{- if $cfg.nodeSelector }}
+      nodeSelector:
+        {{- range $key, $value := $cfg.nodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
+
+      {{- if $cfg.affinity }}
+      affinity:
+        {{- toYaml $cfg.affinity | nindent 8 }}
+      {{- end }}
+
+      {{- if $cfg.volumes }}
+      volumes:
+        {{- range $cfg.volumes }}
+        - name: {{ .name }}
+          {{- if .configMapName }}
+          configMap:
+            name: {{ .configMapName }}
+          {{- end }}
+          {{- if .secretName }}
+          secret:
+            secretName: {{ .secretName }}
+            defaultMode: {{ .secretDefaultMode | default "0440" }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+---
+{{- if $cfg.serviceName }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $cfg.serviceName }}
+  namespace: {{ $.Values.namespace | default $.Release.Namespace }}
+spec:
+  selector:
+    {{- range $key, $value := $cfg.labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+  type: {{ $cfg.serviceType | default "ClusterIP" }}
+  ports:
+    - name: {{ $cfg.servicePortName | default "http" }}
+      protocol: {{ $cfg.servicePortProtocol | default "TCP" }}
+      port: {{ $cfg.servicePort | default 80 }}
+      targetPort: {{ $cfg.serviceTargetPort | default $cfg.containerPort }}
+{{- end }}
+---
+{{- end }}

@@ -1,0 +1,44 @@
+{{- range $name, $cfg := .Values.gcpBackendPolicies }}
+---
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  {{- if or $cfg.securityPolicy $cfg.drainingTimeoutSec $cfg.enableLogging $cfg.loggingSampleRate $cfg.maxRatePerEndpoint $cfg.timeoutSec }}
+  default:
+    {{- if $cfg.securityPolicy }}
+    securityPolicy: {{ $cfg.securityPolicy }}
+    {{- end }}
+
+    {{- if $cfg.drainingTimeoutSec }}
+    connectionDraining:
+      drainingTimeoutSec: {{ $cfg.drainingTimeoutSec }}
+    {{- end }}
+
+    {{- if $cfg.sessionAffinityType }}
+    sessionAffinity:
+      type: {{ $cfg.sessionAffinityType }}
+    {{- end }}
+
+    {{- if or $cfg.enableLogging $cfg.loggingSampleRate }}
+    logging:
+      enabled: {{ $cfg.enableLogging | default true }}
+      sampleRate: {{ $cfg.loggingSampleRate | default 1000000 }}
+    {{- end }}
+
+    {{- if $cfg.maxRatePerEndpoint }}
+    maxRatePerEndpoint: {{ $cfg.maxRatePerEndpoint }}
+    {{- end }}
+
+    {{- if $cfg.timeoutSec }}
+    timeoutSec: {{ $cfg.timeoutSec }}
+    {{- end }}
+  {{- end }}
+
+  targetRef:
+    group: "{{ $cfg.targetGroup | default "" }}"
+    kind: {{ $cfg.targetKind | default "Service" }}
+    name: {{ $cfg.targetName }}
+{{- end }}

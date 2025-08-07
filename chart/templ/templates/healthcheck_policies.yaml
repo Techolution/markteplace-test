@@ -1,0 +1,102 @@
+{{- range $name, $cfg := .Values.healthCheckPolicies }}
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  {{- if or $cfg.checkIntervalSec $cfg.tcpHealthCheck $cfg.httpHealthCheck $cfg.httpsHealthCheck $cfg.healthyThreshold $cfg.timeoutSec $cfg.unhealthyThreshold $cfg.enableLogging }}
+  default:
+    {{- if $cfg.checkIntervalSec }}
+    checkIntervalSec: {{ $cfg.checkIntervalSec }}
+    {{- end }}
+
+    {{- if $cfg.tcpHealthCheck }}
+    config:
+      tcpHealthCheck:
+        {{- if $cfg.tcpHealthCheck.port }}
+        port: {{ $cfg.tcpHealthCheck.port }}
+        {{- end }}
+        {{- if $cfg.tcpHealthCheck.portSpecification }}
+        portSpecification: {{ $cfg.tcpHealthCheck.portSpecification }}
+        {{- end }}
+        {{- if $cfg.tcpHealthCheck.proxyHeader }}
+        proxyHeader: {{ $cfg.tcpHealthCheck.proxyHeader }}
+        {{- end }}
+        {{- if $cfg.tcpHealthCheck.request }}
+        request: {{ $cfg.tcpHealthCheck.request }}
+        {{- end }}
+        {{- if $cfg.tcpHealthCheck.response }}
+        response: {{ $cfg.tcpHealthCheck.response }}
+        {{- end }}
+      type: TCP
+    {{- else if $cfg.httpHealthCheck }}
+    config:
+      httpHealthCheck:
+        {{- if $cfg.httpHealthCheck.port }}
+        port: {{ $cfg.httpHealthCheck.port }}
+        {{- end }}
+        {{- if $cfg.httpHealthCheck.portSpecification }}
+        portSpecification: {{ $cfg.httpHealthCheck.portSpecification }}
+        {{- end }}
+        {{- if $cfg.httpHealthCheck.host }}
+        host: {{ $cfg.httpHealthCheck.host }}
+        {{- end }}
+        {{- if $cfg.httpHealthCheck.requestPath }}
+        requestPath: {{ $cfg.httpHealthCheck.requestPath }}
+        {{- end }}
+        {{- if $cfg.httpHealthCheck.response }}
+        response: {{ $cfg.httpHealthCheck.response }}
+        {{- end }}
+        {{- if $cfg.httpHealthCheck.proxyHeader }}
+        proxyHeader: {{ $cfg.httpHealthCheck.proxyHeader }}
+        {{- end }}
+      type: HTTP
+    {{- else if $cfg.httpsHealthCheck }}
+    config:
+      httpsHealthCheck:
+        {{- if $cfg.httpsHealthCheck.port }}
+        port: {{ $cfg.httpsHealthCheck.port }}
+        {{- end }}
+        {{- if $cfg.httpsHealthCheck.portSpecification }}
+        portSpecification: {{ $cfg.httpsHealthCheck.portSpecification }}
+        {{- end }}
+        {{- if $cfg.httpsHealthCheck.host }}
+        host: {{ $cfg.httpsHealthCheck.host }}
+        {{- end }}
+        {{- if $cfg.httpsHealthCheck.requestPath }}
+        requestPath: {{ $cfg.httpsHealthCheck.requestPath }}
+        {{- end }}
+        {{- if $cfg.httpsHealthCheck.response }}
+        response: {{ $cfg.httpsHealthCheck.response }}
+        {{- end }}
+        {{- if $cfg.httpsHealthCheck.proxyHeader }}
+        proxyHeader: {{ $cfg.httpsHealthCheck.proxyHeader }}
+        {{- end }}
+      type: HTTPS
+    {{- end }}
+
+    {{- if $cfg.healthyThreshold }}
+    healthyThreshold: {{ $cfg.healthyThreshold }}
+    {{- end }}
+
+    {{- if or $cfg.enableLogging }}
+    logConfig:
+      enabled: {{ $cfg.enableLogging | default true }}
+    {{- end }}
+
+    {{- if $cfg.timeoutSec }}
+    timeoutSec: {{ $cfg.timeoutSec }}
+    {{- end }}
+
+    {{- if $cfg.unhealthyThreshold }}
+    unhealthyThreshold: {{ $cfg.unhealthyThreshold }}
+    {{- end }}
+  {{- end }}
+
+  targetRef:
+    group: "{{ $cfg.targetGroup | default "" }}"
+    kind: {{ $cfg.targetKind | default "Service" }}
+    name: {{ $cfg.targetName }}
+{{- end }}
