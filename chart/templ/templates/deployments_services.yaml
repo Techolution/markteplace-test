@@ -32,7 +32,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ $name }}
-          image: "{{ $.Values.artifacts.registry }}/{{ $.Values.artifacts.repository }}/{{ $name }}:{{ $cfg.imageTag | required "imageTag is required" }}"
+          image: "{{ $.Values.artifacts.registry }}/{{ $.Values.artifacts.repository }}:{{ $cfg.imageTag | required "imageTag is required" }}"
           {{- if $cfg.command }}
           command:
             {{- range $cfg.command }}

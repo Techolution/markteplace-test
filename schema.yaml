@@ -8,12 +8,12 @@ x-google-marketplace:
     releaseNote: >
       Initial Marketplace release of MyApp.
   images:
-    '':
+    egpt-react-fe:
       properties:
-        artifacts.image.repository:
+        artifacts.repository:
           type: REPO_WITHOUT_REGISTRY
           default: appmod-pa-demo
-        artifacts.image.registry:
+        artifacts.registry:
           type: REGISTRY
           default: us-docker.pkg.dev/techolution-public
         deployments.egpt-react-fe.imageTag:
@@ -50,35 +50,18 @@ x-google-marketplace:
 properties:
   name:
     type: string
-    default: "test-release"
     x-google-marketplace:
       type: NAME
   namespace:
     type: string
-    default: "test"
     x-google-marketplace:
       type: NAMESPACE
   deployments.egpt-react-fe.envParameters.TEST_ENV:
     type: string
     default: "one"
     description: “Value for TEST_ENV in the React FE pod.”
-  gatewayCertName:
-    type: string
-    default: "new-cert"
-    description: “Google Managed Certificate for gateway.”
-  gatewayStaticIP:
-    type: string
-    default: "new-ip"
-    description: “Static IP' name for gateway.”
-  gatewayHostname:
-    type: string
-    default: "practicedomain.space"
-    description: “Host name for gateway.”
 
 # (Add more entries under `properties:` for each --set override you want)
 required:
   - name
   - namespace
-  - gatewayStaticIP
-  - gatewayCertName
-  - gatewayHostname

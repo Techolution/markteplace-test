@@ -2,10 +2,6 @@ artifacts:
   registry: us-docker.pkg.dev/techolution-public
   repository: appmod-pa-demo
 
-gatewayCertName: test-cert
-gatewayStaticIP: test-ip
-gatewayHostname: practicedomain.space
-
 deployments:
   egpt-react-fe:
     replicas: 1
@@ -28,38 +24,3 @@ deployments:
     serviceType: ClusterIP
     servicePort: 80
     serviceTargetPort: 3000
-
-gcpBackendPolicies:
-  egpt-react-fe-backend-policy:
-    targetName: egpt-react-fe
-    drainingTimeoutSec: 60
-    enableLogging: true
-    loggingSampleRate: 1000000
-    timeoutSec: 1800
-healthCheckPolicies:
-  egpt-react-fe-hc:
-    targetName: egpt-react-fe
-    checkIntervalSec: 15
-    tcpHealthCheck:
-      port: 3000
-      portSpecification: USE_FIXED_PORT
-      proxyHeader: NONE
-    healthyThreshold: 1
-    enableLogging: true
-    timeoutSec: 10
-    unhealthyThreshold: 3
-
-httpRoutes:
-  egpt-routes:
-    parent: egpt-gateway
-    hostnames:
-      - practicedomain.space
-    rules:
-      - path: /
-        backend: egpt-react-fe
-        pathType: PathPrefix
-        port: 80
-      - path: /api/auth
-        backend: egpt-react-fe
-        pathType: PathPrefix
-        port: 80

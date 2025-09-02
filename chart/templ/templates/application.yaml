@@ -25,13 +25,3 @@ spec:
     # Deployment from apps/v1
     - group: apps
       kind: Deployment
-    # Gateway API resources
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-    - group: gateway.networking.k8s.io
-      kind: HTTPRoute
-    # GCP-specific policy CRDs
-    - group: networking.gke.io
-      kind: GCPBackendPolicy
-    - group: networking.gke.io
-      kind: HealthCheckPolicy
